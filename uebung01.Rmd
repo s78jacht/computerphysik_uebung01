@@ -13,23 +13,35 @@ lang: de-DE
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Einleitung
+Im Folgenden ist ein Random-Walk in zwei Dimensionen zu implementieren und über einen Plot zu visualisieren. Ausgangspunkt ist die Iterationsvorschrift
 
-## R Markdown
+$$
+q_{n+1} = \frac{q_n + p_{i_n}}{2},
+$$
+wobei in jedem Schritt einer der vier Punkte 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+$$
+p_0 = (0,0), \quad p_1 = (1,0), \quad p_2 = (0,1), \quad p_3 = (1,1)
+$$
+zufällig ausgewählt wird. Zusätzlich wird verlangt, dass derselbe Index nicht in zwei aufeinanderfolgenden Schritten verwendet werden darf. Als Startwert wird 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+$$
+q_0 = p_0 = (0,0)
+$$
+gesetzt.
 
-```{r cars}
-summary(cars)
-```
+Ziel der Aufgabe ist es, für eine große Anzahl an Iterationen ($N = 10^6$) die Punkte $q_n$ zu erzeugen und in einem zweidimensionalen Plot darzustellen.
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+Die Aufgabe wird dabei in zwei Teile gegliedert:
+1. In c++ erfolgt die Berechnung des Random-Walks.
+2. In Python wird der Random-Walk als Streudiagramm visualisiert.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# Lösung der Aufgabe
+## Berechnung in C++
+### Definition der Eckpunkte
+
+
