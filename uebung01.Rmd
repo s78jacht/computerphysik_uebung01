@@ -13,6 +13,10 @@ lang: de-DE
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r packages, include=FALSE}
+library(Rcpp) ## Packet für C++ Code in R
+```
+
 # Einleitung
 Im Folgenden ist ein Random-Walk in zwei Dimensionen zu implementieren und über einen Plot zu visualisieren. Ausgangspunkt ist die Iterationsvorschrift
 
@@ -42,6 +46,116 @@ Die Aufgabe wird dabei in zwei Teile gegliedert:
 
 # Lösung der Aufgabe
 ## Berechnung in C++
-### Definition der Eckpunkte
+
+```{cpp, eval=TRUE}
+Rcpp::sourceCpp(code = '
+#include <Rcpp.h> 
+using namespace Rcpp;          
+// [[Rcpp::export]]     // Macht die Funktion in R aufrufbar
+
+NumericMatrix generate_random_walk_cpp(int N) {
+    NumericMatrix points(N + 1, 2);
+
+    const double p[4][2] = { // 4 Zeilen, 2 Spalten
+        {0.0, 0.0}, // p_0
+        {1.0, 0.0}, // p_1
+        {0.0, 1.0}, // p_2
+        {1.0, 1.0} // p_3
+    };
+
+    
+    // Startpunkt q_0 = (0,0) 
+    double x = 0.0;
+    double y = 0.0;
+
+    
+    // Speichert q_0 in der ersten Zeile der Matrix
+    points(0, 0) = x;
+    points(0, 1) = y;
 
 
+    // Speichert den vorherigen Index (initial -1 = keiner gewählt)
+    int previous_index = -1;
+
+    // Hauptschleife für N Iterationen
+    for (int n = 0; n < N; ++n) {
+        int current_index;
+
+
+        // Zieht zufälligen Index 0-3, aber nicht den gleichen wie vorher
+        do {
+            current_index = static_cast<int>(std::floor(R::runif(0.0, 4.0))); // R::runif(0,4) erzeugt eine Zufallszahl in [0,4)], floor = Ganzzahl 0,1,2,3 
+        } while (current_index == previous_index);
+
+        
+        // Berechnung des neuen Punktes
+        x = 0.5 * (x + p[current_index][0]);
+        y = 0.5 * (y + p[current_index][1]);
+
+
+        // Speichert den neuen Punkt in der Matrix
+        points(n + 1, 0) = x;
+        points(n + 1, 1) = y;
+
+
+        // Merkt sich den aktuellen Index
+        previous_index = current_index;
+    }
+
+    colnames(points) = CharacterVector::create("x", "y"); // Benennung der Spalten als x und y
+    return points;
+}
+')
+```
+
+Zunächst wird eine Matrix mit N+1 Zeilen und 2 Spalten für x und y erstellt. 
+Anschließend werden die vier Eckpunkte $P_0$ bis $p_3$ des Einheitsquadrats definiert und der Startpunkt $q_0 = (0,0)$ in der Matrix gespeichert.
+
+Zu Beginn der Iteration wird die Variable
+```{cpp, eval=FALSE}
+int previous_index = -1;
+```
+eingeführt. Diese Variable speichert den Index des im vorherigen Schritt gewählten Eckpunkts. Hintergrund ist die zusätzliche Bedingung des Algorithmus, dass derselbe Index nicht in zwei aufeinanderfolgenden Schritten verwendet werden darf.
+
+Da zu Beginn der Simulation noch kein vorheriger Schritt existiert, wird `previous_index` mit dem Wert −1 initialisiert. Dieser Wert ist bewusst gewählt, da er außerhalb des gültigen Indexbereichs liegt (0,1,2,3).
+
+Dadurch ist sichergestellt, dass im ersten Iterationsschritt jeder zufällig gewählte Index automatisch ungleich `previous_index` ist. Die Bedingung in der später verwendeten Schleife
+
+```{cpp, eval=FALSE}
+    // Hauptschleife für N Iterationen
+    for (int n = 0; n < N; ++n) {
+        int current_index;
+
+
+        // Zieht zufälligen Index 0-3, aber nicht den gleichen wie vorher
+        do {
+            current_index = static_cast<int>(std::floor(R::runif(0.0, 4.0))); // R::runif(0,4) erzeugt eine Zufallszahl in [0,4)], floor = Ganzzahl 0,1,2,3 
+        } while (current_index == previous_index);
+```
+ist somit beim ersten Durchlauf immer erfüllt, sodass keine erneute Ziehung notwendig ist.
+
+Erst ab dem zweiten Iterationsschritt enthält `previous_index` einen gültigen Wert. Dadurch wird verhindert, dass derselbe Eckpunkt direkt hintereinander gewählt wird.
+
+In der Hauptschleife selbst wird eine Zählvariable `n` definiert, die dafür sorgt, dass die Schleife so lange läuft, bis `n == N`ist. DIe Zählvariable `n` wird dabei nach jedem Durchlauf um 1 erhöht. In jeder Iteration wird nun ein neurer Index zufällig aus den Werten von 0 bis 3 gewählt.
+
+Anschließend wird der neue Punkt mit der Vorschrift
+```{cpp, eval=FALSE}
+ // Berechnung des neuen Punktes
+        x = 0.5 * (x + p[current_index][0]);
+        y = 0.5 * (y + p[current_index][1]);
+```
+berechnet und in der Matrix gespeichert.
+
+Zuletzt wird der aktuelle Index gespeichert und die Spalten der Matrix benannt.
+
+
+
+
+
+
+Noch zu tun:
+- Anzahl Iterationen festlegen
+- Funktion aufrufen
+- Speicherung der Punkte als CSV Datei
+
+- Visualisierung mit Python
